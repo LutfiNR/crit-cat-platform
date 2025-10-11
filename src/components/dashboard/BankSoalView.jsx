@@ -6,6 +6,7 @@ import { Box, Typography, Button, Paper, CircularProgress, Table, TableBody, Tab
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import Image from 'next/image';
 
 // Impor semua fungsi API yang kita butuhkan
 import { getTestQuestions, getQuestionById, updateQuestion, deleteQuestion } from '@/lib/api';
@@ -111,20 +112,29 @@ export default function BankSoalView() {
                         <Table>
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Subjek</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Teks Soal (Tier 1)</TableCell>
-                                    <TableCell align="center" sx={{ fontWeight: 'bold' }}>Kesulitan (b)</TableCell>
-                                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold', width: '64px' }}>Item</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', width: '64px' }}>b</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', width: '64px' }}>bi1</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', width: '64px' }}>bi2</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', width: '64px' }}>bi3</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Soal</TableCell>
+                                    <TableCell align="center" sx={{ fontWeight: 'bold', width: '64px' }}>Aksi</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {questions.length > 0 ? (
-                                    questions.map((q) => (
+                                    questions.map((q, index) => (
                                         <TableRow key={q._id}>
-                                            <TableCell>{q.subject}</TableCell>
-                                            <TableCell>{q.tier1Text.substring(0, 70)}...</TableCell>
-                                            <TableCell align="center">{q.difficulty}</TableCell>
-                                            <TableCell align="right">
+                                            <TableCell align="center" sx={{ verticalAlign: 'top' }} >{index + 1}</TableCell>
+                                            <TableCell align="center" sx={{ verticalAlign: 'top' }}>{q.difficulty}</TableCell>
+                                            <TableCell align="center" sx={{ verticalAlign: 'top' }}>{q.difficultySecondary}</TableCell>
+                                            <TableCell align="center" sx={{ verticalAlign: 'top' }}>{q.difficultyTertiary}</TableCell>
+                                            <TableCell align="center" sx={{ verticalAlign: 'top' }}>{q.difficultyQuaternary}</TableCell>
+                                            <TableCell sx={{ verticalAlign: 'top' }}>
+                                                {q.tier1Text.substring(0, 70)}...<br />
+                                                {q.imagelink && <Image src={q.imagelink} alt="Gambar Soal" width={200} height={200} />}
+                                            </TableCell>
+                                            <TableCell align="center" sx={{ verticalAlign: 'top' }}>
                                                 <IconButton color="primary" onClick={() => handleOpenForm(q)}><EditIcon /></IconButton>
                                                 <IconButton color="error" onClick={() => handleDelete(q._id)}><DeleteIcon /></IconButton>
                                             </TableCell>

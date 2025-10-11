@@ -22,7 +22,7 @@ export default function CompletionScreen({ userName, stoppingRule }) {
           Tes Anda dihentikan karena: {messages[stoppingRule] || 'Tes telah selesai.'}
         </Typography>
         <Box mt={4}>
-            <Button variant="contained" href="/">Kembali ke Beranda</Button>
+            <Button variant="contained" href="/dashboard">Kembali ke Dashboard</Button>
         </Box>
       </Paper>
     </Container>

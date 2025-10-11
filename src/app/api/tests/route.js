@@ -35,7 +35,7 @@ export async function POST(request) {
 
   await dbConnect();
   try {
-    const { title, description, accessCode, duration, questions } = await request.json();
+    const { title, description, accessCode, duration, questions, status } = await request.json();
 
     // Validasi sederhana
     if (!title || !accessCode || !duration || !questions) {
@@ -54,7 +54,8 @@ export async function POST(request) {
       accessCode,
       duration,
       questions,
-      createdBy: session.user.id, // Set pembuat tes adalah user yang login
+      status,
+      createdBy: session.user.id,
     });
 
     await newTest.save();

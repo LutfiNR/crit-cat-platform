@@ -130,7 +130,7 @@ const GuruDashboard = ({ session }) => {
   return (
     <Box>
       <Typography variant="h4" component="h1" gutterBottom>
-        Dashboard Administrator
+        Dashboard Guru
       </Typography>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>
         Selamat Datang, {session.user.name}!
@@ -179,12 +179,6 @@ export default function DashboardPage() {
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {session?.user?.role === 'guru' && <GuruDashboard session={session} />}
       {session?.user?.role === 'siswa' && <SiswaDashboard session={session} />}
-
-      <Box sx={{ mt: 5, textAlign: 'center' }}>
-        <Button variant="outlined" color="error" onClick={() => signOut({ callbackUrl: '/' })}>
-          Logout
-        </Button>
-      </Box>
     </Container>
   );
 }

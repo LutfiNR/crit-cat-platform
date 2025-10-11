@@ -4,11 +4,10 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
-import Submission from '@/models/Submission';
-import Test from '@/models/Test';
+import '@/models';
 
 export async function GET(request, { params }) {
-  const { testId } = params;
+  const { testId } = await params;
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'guru') {
     return NextResponse.json({ message: "Akses ditolak" }, { status: 403 });

@@ -41,8 +41,7 @@ const TestSchema = new mongoose.Schema({
   // Status tes, apakah masih draft atau sudah bisa diakses
   status: {
       type: String,
-      enum: ['draft', 'published'],
-      default: 'draft',
+      enum: ['draft', 'published']
   }
 }, {
   timestamps: true

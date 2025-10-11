@@ -42,6 +42,7 @@ const AccessCodeForm = ({ onStart, loading, error, setError }) => {
 
 export default function TestPage() {
     const { data: session, status } = useSession();
+    const [userInfo, setUserInfo] = useState({ name:'N/A', school: 'N/A', nis: 'N/A', kelas: 'N/A', accessCode: 'N/A' });
     const router = useRouter();
 
     const [testPhase, setTestPhase] = useState('enterCode'); // enterCode | testing | finished
@@ -64,7 +65,7 @@ export default function TestPage() {
         const response = await fetch('/api/attempt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessCode }) });
         const data = await response.json();
         if (!response.ok) { setLoading(false); throw new Error(data.message); }
-
+        setUserInfo({name: session.user.name, school : session.user.school, nis: session.user.nis, kelas: session.user.kelas, accessCode: accessCode  });
         setTestData(data.testData);
         setTimeLeft(data.testData.duration * 60);
         setTestStartTime(new Date());
@@ -75,22 +76,84 @@ export default function TestPage() {
         setLoading(false);
     };
 
-    const handleFinishTest = useCallback(async (rule, history) => {
-        if (testPhase === 'finished') return;
+     const handleFinishTest = useCallback(async (rule, history) => {
+        if (testPhase === 'finished') return; // Mencegah pemanggilan ganda
+        
         setStoppingRule(rule);
         setTestPhase('finished');
+
         const finalData = {
             userId: session.user.id,
             testId: testData._id,
-            userInfo: { name: session.user.name, nis: session.user.nis || 'N/A', kelas: session.user.kelas || 'N/A' },
-            testStartTime, testFinishTime: new Date(), finalTheta: theta, stoppingRule: rule, responseHistory: history,
+            userInfo: userInfo,
+            testStartTime: testStartTime, 
+            testFinishTime: new Date(), 
+            finalTheta: theta, 
+            stoppingRule: rule, 
+            responseHistory: history,
         };
-        try { await submitTestResults(finalData); } catch (err) { console.error("Gagal menyimpan hasil tes:", err); }
-    }, [testPhase, testData, session, theta, responseHistory, testStartTime]);
+        try { 
+            await submitTestResults(finalData); 
+        } catch (err) { 
+            console.error("Gagal menyimpan hasil tes:", err); 
+        }
+    }, [testPhase, testData, session, theta, testStartTime]); // responseHistory dihapus dari dependensi untuk stabilitas
+
+    // --- FITUR BARU 2: Implementasi Deteksi Pindah Tab ---
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden && testPhase === 'testing') {
+                console.log("Peringatan: Pengguna meninggalkan tab saat tes! Mengakhiri tes.");
+
+                // Buat 'zeroed' payload
+                const zeroedHistory = responseHistory.map(item => ({
+                    ...item,
+                    score: 0,
+                    pCorrect: 0,
+                    pWrong: 0,
+                    responsePattern: 0,
+                    informationFunction: 0,
+                    thetaBefore: 0,
+                    thetaAfter: 0,
+                    se: 0,
+                    seDifference: item.seDifference === null ? null : 0,
+                }));
+
+                const zeroedPayload = {
+                    userId: session.user.id,
+                    testId: testData._id,
+                    userInfo: userInfo,
+                    testStartTime, 
+                    testFinishTime: new Date(), 
+                    finalTheta: 0,
+                    stoppingRule: 'LEFT_TAB',
+                    responseHistory: zeroedHistory,
+                };
+                
+                // Set fase finished di frontend
+                setStoppingRule('LEFT_TAB');
+                setTestPhase('finished');
+                
+                // Kirim payload yang sudah di-nol-kan
+                try {
+                    submitTestResults(zeroedPayload);
+                } catch (err) {
+                    console.error("Gagal menyimpan hasil tes (left tab):", err);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, [testPhase, responseHistory, testStartTime, session, testData, handleFinishTest]);
+
 
     const processAnswerAndSelectNext = useCallback(() => {
         if (!userAnswers.tier1 || !userAnswers.tier2) return;
-        
+
         const tier1Correct = userAnswers.tier1 === currentQuestion.correctTier1;
         const tier2Correct = userAnswers.tier2 === currentQuestion.correctTier2;
 
@@ -99,15 +162,15 @@ export default function TestPage() {
         const responsePattern = CAT_Engine.calculateResponsePattern(score);
         const pCorrect = CAT_Engine.calculateCorrectProbability(oldTheta, currentQuestion.difficulty);
         const pWrong = CAT_Engine.calculcateWrongProbability(pCorrect);
-        
+
         // Asumsi: theta baru dihitung berdasarkan semua history, bukan hanya 1 soal terakhir
         // Ini adalah pendekatan yang lebih stabil
         const tempHistory = [...responseHistory, { responsePattern, pCorrect, pWrong }];
         const newTheta = CAT_Engine.calculateNewTheta(tempHistory, oldTheta); // Fungsi perlu disesuaikan
-        
+
         const informationFunction = CAT_Engine.calculateInformationFunction(pCorrect, pWrong);
         const totalInformation = responseHistory.reduce((sum, item) => sum + item.informationFunction, 0) + informationFunction;
-        
+
         const oldSE = responseHistory.length > 0 ? responseHistory[responseHistory.length - 1].se : 1.0;
         const newSE = CAT_Engine.calculateStandardError(totalInformation);
         const seDifference = responseHistory.length > 0 ? CAT_Engine.calculateDifferenceSE(oldSE, newSE) : null;
@@ -122,6 +185,7 @@ export default function TestPage() {
         setResponseHistory(updatedHistory);
         setTheta(newTheta);
         
+
         if (answeredQuestionIds.size >= testData.questions.length) { handleFinishTest('NO_MORE_QUESTIONS', updatedHistory); return; }
         if (seDifference !== null && seDifference < 0.001) { handleFinishTest('SE_DIFFERENCE', updatedHistory); return; }
 
@@ -129,10 +193,10 @@ export default function TestPage() {
         if (availableQuestions.length === 0) { handleFinishTest('NO_MORE_QUESTIONS', updatedHistory); return; }
 
         // Logika adaptif yang disempurnakan: cari soal dengan kesulitan paling dekat dengan theta siswa
-        const nextQuestion = availableQuestions.reduce((prev, curr) => 
+        const nextQuestion = availableQuestions.reduce((prev, curr) =>
             Math.abs(curr.difficulty - newTheta) < Math.abs(prev.difficulty - newTheta) ? curr : prev
         );
-        
+
         setCurrentQuestion(nextQuestion);
         setAnsweredQuestionIds(prev => new Set(prev).add(nextQuestion._id));
         setUserAnswers({ tier1: null, tier2: null });
@@ -140,10 +204,10 @@ export default function TestPage() {
     }, [userAnswers, currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest]);
 
     useEffect(() => {
-        if (status === 'unauthenticated') router.replace('/login');
+        if (status === 'unauthenticated') router.replace('/signin');
         if (status === 'authenticated' && session?.user?.role !== 'siswa') router.replace('/dashboard');
     }, [status, session, router]);
-    
+
     useEffect(() => {
         if (testPhase !== 'testing' || timeLeft <= 0) return;
         const timerId = setInterval(() => setTimeLeft(t => t - 1), 1000);
@@ -158,8 +222,9 @@ export default function TestPage() {
     if (status === 'loading' || !session) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
     if (testPhase === 'enterCode') return <AccessCodeForm onStart={handleStartTest} loading={loading} error={error} setError={setError} />;
     if (testPhase === 'finished') return <CompletionScreen userName={session.user.name} stoppingRule={stoppingRule} />;
+    console.log(stoppingRule);
     if (testPhase === 'testing' && currentQuestion) {
-        const formatTime = (seconds) => `${Math.floor(seconds/60).toString().padStart(2,'0')}:${(seconds%60).toString().padStart(2,'0')}`;
+        const formatTime = (seconds) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
         return (
             <Container maxWidth="md" sx={{ py: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>

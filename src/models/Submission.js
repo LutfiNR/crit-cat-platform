@@ -31,14 +31,15 @@ const SubmissionSchema = new mongoose.Schema({
   },
   userInfo: {
     name: { type: String, required: true },
-    studentClass: { type: String, required: true },
-    studentId: { type: String, required: true },
+    school: { type: String, required: true },
+    kelas: { type: String, required: true },
+    nis: { type: String, required: true },
     accessCode: { type: String, required: true },
   },
   testStartTime: { type: Date, required: true },
   testFinishTime: { type: Date, required: true },
   finalTheta: { type: Number, required: true },
-  stoppingRule: { type: String, enum: ['TIME_WASTED', 'NO_MORE_QUESTIONS', 'SE_DIFFERENCE'], required: true },
+  stoppingRule: { type: String, enum: ['TIME_WASTED', 'NO_MORE_QUESTIONS', 'SE_DIFFERENCE', 'LEFT_TAB'], required: true },
   responseHistory: [ResponseHistorySchema],
 }, { timestamps: true });
 
