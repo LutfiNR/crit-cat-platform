@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Alert, ListItemAvatar, Avatar, Container, Typography, Box, CircularProgress, Button, Paper, Grid, List, ListItem, ListItemText, Divider } from '@mui/material';
+import { Alert, ListItemAvatar, Avatar, Container, Typography, Box, CircularProgress, Button, Paper, Grid, List, ListItem, ListItemText, Divider, Table, TableContainer, TableHead, TableRow, TableCell, TableBody } from '@mui/material';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 
@@ -15,6 +15,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import BankSoalView from '@/components/dashboard/BankSoalView';
 import BankTesView from '@/components/dashboard/BankTesView';
 import RekapTesView from '@/components/dashboard/RekapTesView';
+import Link from 'next/link';
 
 // ===================================================================
 // ## KOMPONEN REUSABLE UNTUK KARTU STATISTIK GURU ##
@@ -49,12 +50,11 @@ const SiswaDashboard = ({ session }) => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Fungsi untuk mengambil data riwayat dari API
     const fetchHistory = async () => {
       try {
         const response = await fetch('/api/submissions/history');
         if (!response.ok) {
-          throw new Error('Gagal memuat data.');
+          throw new Error('Gagal memuat data riwayat tes.');
         }
         const data = await response.json();
         setHistory(data.history);
@@ -73,7 +73,8 @@ const SiswaDashboard = ({ session }) => {
       <Typography variant="h4" component="h1" gutterBottom>Selamat Datang, {session.user.name}!</Typography>
       <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 4 }}>Siap untuk mengasah kemampuan berpikir kritis Anda?</Typography>
 
-      <Paper elevation={4} sx={{ p: {xs: 3, sm: 5}, mb: 4, textAlign: 'center', background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.primary.light} 90%)` }}>
+      {/* Kartu Aksi Utama (Tidak Berubah) */}
+      <Paper elevation={4} sx={{ p: { xs: 3, sm: 5 }, mb: 4, textAlign: 'center', background: (theme) => `linear-gradient(45deg, ${theme.palette.primary.main} 30%, ${theme.palette.primary.light} 90%)` }}>
         <Typography variant="h5" sx={{ color: 'primary.contrastText', fontWeight: 'bold', mb: 2 }}>Mulai Ujian Baru</Typography>
         <Button variant="contained" color="secondary" size="large" onClick={() => router.push('/test')} startIcon={<EditNoteIcon />}>
           Kerjakan Tes
@@ -81,38 +82,58 @@ const SiswaDashboard = ({ session }) => {
       </Paper>
 
       <Typography variant="h5" gutterBottom sx={{ mt: 5 }}>Riwayat Tes Anda</Typography>
-      <Paper variant="outlined">
+
+      {/* --- PERUBAHAN UTAMA: Menggunakan Tabel --- */}
+      <TableContainer component={Paper} variant="outlined">
         {loading ? (
           <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>
         ) : error ? (
           <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>
         ) : (
-          <List>
-            {history.length > 0 ? (
-              history.map((item, index) => (
-                <React.Fragment key={item._id}>
-                  <ListItem>
-                    <ListItemAvatar>
-                      <Avatar><HistoryIcon /></Avatar>
-                    </ListItemAvatar>
-                    <ListItemText 
-                      primary={item.testId?.title || "Tes Dihapus"} 
-                      secondary={`Selesai pada: ${new Date(item.testFinishTime).toLocaleString('id-ID')}`} 
-                    />
-                    <Box sx={{ textAlign: 'right', ml: 2 }}>
-                       <Typography variant="caption" color="text.secondary">Nilai Akhir (Theta)</Typography>
-                       <Typography sx={{ fontWeight: 'bold' }}>{item.finalTheta.toFixed(3)}</Typography>
-                    </Box>
-                  </ListItem>
-                  {index < history.length - 1 && <Divider variant="inset" component="li" />}
-                </React.Fragment>
-              ))
-            ) : (
-              <Typography sx={{ p: 3, textAlign: 'center', color: 'text.secondary' }}>Belum ada riwayat tes.</Typography>
-            )}
-          </List>
+          <Table sx={{ minWidth: 650 }}>
+            <TableHead>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 'bold' }}>Nama Test</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Waktu Selesai</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Nilai Akhir (Theta)</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {history.length > 0 ? (
+                history.map((item) => (
+                  <TableRow key={item._id}>
+                    <TableCell>{item.testId.title}</TableCell>
+                    <TableCell>{new Date(item.testFinishTime).toLocaleString('id-ID')}</TableCell>
+                    <TableCell>{item.stoppingRule}</TableCell>
+                    <TableCell align="center">{item.finalTheta.toFixed(3)}</TableCell>
+                    <TableCell align="center">
+                      <Button
+                        component={Link}
+                        href={`/results/${item._id}`}
+                        size="small"
+                        variant="outlined"
+                        target='_blank'
+                      >
+                        Lihat Rincian
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
+                    <Typography color="text.secondary">
+                      Belum ada riwayat tes yang dikerjakan.
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         )}
-      </Paper>
+      </TableContainer>
     </Box>
   );
 };

@@ -8,28 +8,44 @@ import { Container, Typography, Box, CircularProgress, Button, Paper, TextField,
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 
-// Impor komponen, engine, dan API
 import QuestionDisplay from '@/components/test/QuestionDisplay';
 import TierOptions from '@/components/test/TierOptions';
 import CompletionScreen from '@/components/test/CompletionScreen';
-import CAT_Engine from '@/lib/catHandlers'; // Menggunakan file baru
+import CAT_Engine from '@/lib/catHandlers';
 import { submitTestResults } from '@/lib/api';
 
+// --- KOMPONEN FORM KODE AKSES ---
 const AccessCodeForm = ({ onStart, loading, error, setError }) => {
     const [accessCode, setAccessCode] = useState('');
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
-        if (!accessCode) { setError('Kode akses tidak boleh kosong.'); return; }
-        try { await onStart(accessCode); } catch (err) { setError(err.message); }
+        if (!accessCode) {
+            setError('Kode akses tidak boleh kosong.');
+            return;
+        }
+        try {
+            await onStart(accessCode);
+        } catch (err) {
+            setError(err.message);
+        }
     };
+
     return (
         <Container component="main" maxWidth="xs" sx={{ mt: 8 }}>
             <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 <Typography component="h1" variant="h5">Mulai Tes</Typography>
                 <Typography color="text.secondary" align="center" sx={{ mt: 1 }}>Masukkan kode akses tes dari guru Anda.</Typography>
                 <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: '100%' }}>
-                    <TextField margin="normal" required fullWidth autoFocus label="Kode Akses Tes" value={accessCode} onChange={(e) => setAccessCode(e.target.value)} />
+                    <TextField
+                        margin="normal"
+                        required
+                        fullWidth
+                        autoFocus
+                        label="Kode Akses Tes"
+                        value={accessCode}
+                        onChange={(e) => setAccessCode(e.target.value)}
+                    />
                     {error && <Alert severity="error" sx={{ width: '100%', mt: 1 }}>{error}</Alert>}
                     <Button type="submit" fullWidth variant="contained" disabled={loading} sx={{ mt: 3, mb: 2 }}>
                         {loading ? <CircularProgress size={24} /> : 'Mulai'}
@@ -40,13 +56,14 @@ const AccessCodeForm = ({ onStart, loading, error, setError }) => {
     );
 };
 
+// --- KOMPONEN UTAMA HALAMAN TES ---
 export default function TestPage() {
     const { data: session, status } = useSession();
-    const [userInfo, setUserInfo] = useState({ name:'N/A', school: 'N/A', nis: 'N/A', kelas: 'N/A', accessCode: 'N/A' });
     const router = useRouter();
 
-    const [testPhase, setTestPhase] = useState('enterCode'); // enterCode | testing | finished
+    const [testPhase, setTestPhase] = useState('enterCode');
     const [testData, setTestData] = useState(null);
+    const [accessCode, setAccessCode] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -59,13 +76,22 @@ export default function TestPage() {
     const [answeredQuestionIds, setAnsweredQuestionIds] = useState(new Set());
     const [stoppingRule, setStoppingRule] = useState('');
     const [testStartTime, setTestStartTime] = useState(null);
+    const [totalInformation, setTotalInformation] = useState(0);
 
-    const handleStartTest = async (accessCode) => {
+    const handleStartTest = async (code) => {
         setLoading(true);
-        const response = await fetch('/api/attempt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessCode }) });
+        setAccessCode(code);
+        const response = await fetch('/api/attempt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessCode: code }),
+        });
         const data = await response.json();
-        if (!response.ok) { setLoading(false); throw new Error(data.message); }
-        setUserInfo({name: session.user.name, school : session.user.school, nis: session.user.nis, kelas: session.user.kelas, accessCode: accessCode  });
+        if (!response.ok) {
+            setLoading(false);
+            throw new Error(data.message);
+        }
+
         setTestData(data.testData);
         setTimeLeft(data.testData.duration * 60);
         setTestStartTime(new Date());
@@ -76,80 +102,48 @@ export default function TestPage() {
         setLoading(false);
     };
 
-     const handleFinishTest = useCallback(async (rule, history) => {
-        if (testPhase === 'finished') return; // Mencegah pemanggilan ganda
-        
+    const handleFinishTest = useCallback(async (rule, history) => {
+        if (testPhase === 'finished' || !session || !testData) return;
         setStoppingRule(rule);
         setTestPhase('finished');
 
         const finalData = {
             userId: session.user.id,
             testId: testData._id,
-            userInfo: userInfo,
-            testStartTime: testStartTime, 
-            testFinishTime: new Date(), 
-            finalTheta: theta, 
-            stoppingRule: rule, 
+            userInfo: {
+                name: session.user.name,
+                school: session.user.school,
+                nis: session.user.nis,
+                kelas: session.user.kelas,
+                accessCode: accessCode,
+            },
+            testStartTime,
+            testFinishTime: new Date(),
+            finalTheta: theta,
+            stoppingRule: rule,
             responseHistory: history,
         };
-        try { 
-            await submitTestResults(finalData); 
-        } catch (err) { 
-            console.error("Gagal menyimpan hasil tes:", err); 
+        try {
+            await submitTestResults(finalData);
+        } catch (err) {
+            console.error("Gagal menyimpan hasil tes:", err);
         }
-    }, [testPhase, testData, session, theta, testStartTime]); // responseHistory dihapus dari dependensi untuk stabilitas
+    }, [testPhase, testData, session, theta, testStartTime, accessCode]);
 
-    // --- FITUR BARU 2: Implementasi Deteksi Pindah Tab ---
     useEffect(() => {
         const handleVisibilityChange = () => {
             if (document.hidden && testPhase === 'testing') {
-                console.log("Peringatan: Pengguna meninggalkan tab saat tes! Mengakhiri tes.");
-
-                // Buat 'zeroed' payload
                 const zeroedHistory = responseHistory.map(item => ({
-                    ...item,
-                    score: 0,
-                    pCorrect: 0,
-                    pWrong: 0,
-                    responsePattern: 0,
-                    informationFunction: 0,
-                    thetaBefore: 0,
-                    thetaAfter: 0,
-                    se: 0,
+                    ...item, score: 0, pCorrect: 0, pWrong: 0, responsePattern: 0,
+                    informationFunction: 0, thetaBefore: 0, thetaAfter: 0, se: 0,
                     seDifference: item.seDifference === null ? null : 0,
                 }));
-
-                const zeroedPayload = {
-                    userId: session.user.id,
-                    testId: testData._id,
-                    userInfo: userInfo,
-                    testStartTime, 
-                    testFinishTime: new Date(), 
-                    finalTheta: 0,
-                    stoppingRule: 'LEFT_TAB',
-                    responseHistory: zeroedHistory,
-                };
-                
-                // Set fase finished di frontend
-                setStoppingRule('LEFT_TAB');
-                setTestPhase('finished');
-                
-                // Kirim payload yang sudah di-nol-kan
-                try {
-                    submitTestResults(zeroedPayload);
-                } catch (err) {
-                    console.error("Gagal menyimpan hasil tes (left tab):", err);
-                }
+                handleFinishTest('LEFT_TAB', zeroedHistory);
             }
         };
-
         document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [testPhase, responseHistory, testStartTime, session, testData, handleFinishTest]);
-
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [testPhase, responseHistory, handleFinishTest]);
 
     const processAnswerAndSelectNext = useCallback(() => {
         if (!userAnswers.tier1 || !userAnswers.tier2) return;
@@ -163,36 +157,44 @@ export default function TestPage() {
         const pCorrect = CAT_Engine.calculateCorrectProbability(oldTheta, currentQuestion.difficulty);
         const pWrong = CAT_Engine.calculcateWrongProbability(pCorrect);
 
-        // Asumsi: theta baru dihitung berdasarkan semua history, bukan hanya 1 soal terakhir
-        // Ini adalah pendekatan yang lebih stabil
-        const tempHistory = [...responseHistory, { responsePattern, pCorrect, pWrong }];
-        const newTheta = CAT_Engine.calculateNewTheta(tempHistory, oldTheta); // Fungsi perlu disesuaikan
+        const thetaChange = (responsePattern - pCorrect) * 0.5; // Simplifikasi update theta
+        const newTheta = oldTheta + thetaChange;
 
         const informationFunction = CAT_Engine.calculateInformationFunction(pCorrect, pWrong);
-        const totalInformation = responseHistory.reduce((sum, item) => sum + item.informationFunction, 0) + informationFunction;
+        const newTotalInformation = totalInformation + informationFunction;
+        setTotalInformation(newTotalInformation);
 
         const oldSE = responseHistory.length > 0 ? responseHistory[responseHistory.length - 1].se : 1.0;
-        const newSE = CAT_Engine.calculateStandardError(totalInformation);
+        const newSE = CAT_Engine.calculateStandardError(newTotalInformation);
         const seDifference = responseHistory.length > 0 ? CAT_Engine.calculateDifferenceSE(oldSE, newSE) : null;
 
         const newHistoryEntry = {
-            questionId: currentQuestion._id, questionDifficulty: currentQuestion.difficulty,
-            answerTier1: userAnswers.tier1, answerTier2: userAnswers.tier2, score,
-            pCorrect, pWrong, responsePattern, informationFunction,
+            questionId: currentQuestion._id,
+            questionDifficulty: currentQuestion.difficulty,
+            answerTier1: userAnswers.tier1,
+            answerTier2: userAnswers.tier2,
+            score, pCorrect, pWrong, responsePattern, informationFunction,
             thetaBefore: oldTheta, thetaAfter: newTheta, se: newSE, seDifference,
         };
         const updatedHistory = [...responseHistory, newHistoryEntry];
         setResponseHistory(updatedHistory);
         setTheta(newTheta);
-        
 
-        if (answeredQuestionIds.size >= testData.questions.length) { handleFinishTest('NO_MORE_QUESTIONS', updatedHistory); return; }
-        if (seDifference !== null && seDifference < 0.001) { handleFinishTest('SE_DIFFERENCE', updatedHistory); return; }
+        if (answeredQuestionIds.size >= testData.questions.length) {
+            handleFinishTest('NO_MORE_QUESTIONS', updatedHistory);
+            return;
+        }
+        if (seDifference !== null && seDifference < 0.001) {
+            handleFinishTest('SE_DIFFERENCE', updatedHistory);
+            return;
+        }
 
         const availableQuestions = testData.questions.filter(q => !answeredQuestionIds.has(q._id));
-        if (availableQuestions.length === 0) { handleFinishTest('NO_MORE_QUESTIONS', updatedHistory); return; }
+        if (availableQuestions.length === 0) {
+            handleFinishTest('NO_MORE_QUESTIONS', updatedHistory);
+            return;
+        }
 
-        // Logika adaptif yang disempurnakan: cari soal dengan kesulitan paling dekat dengan theta siswa
         const nextQuestion = availableQuestions.reduce((prev, curr) =>
             Math.abs(curr.difficulty - newTheta) < Math.abs(prev.difficulty - newTheta) ? curr : prev
         );
@@ -201,10 +203,10 @@ export default function TestPage() {
         setAnsweredQuestionIds(prev => new Set(prev).add(nextQuestion._id));
         setUserAnswers({ tier1: null, tier2: null });
         setShowTier2(false);
-    }, [userAnswers, currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest]);
+    }, [userAnswers, currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest, totalInformation]);
 
     useEffect(() => {
-        if (status === 'unauthenticated') router.replace('/signin');
+        if (status === 'unauthenticated') router.replace('/login');
         if (status === 'authenticated' && session?.user?.role !== 'siswa') router.replace('/dashboard');
     }, [status, session, router]);
 
@@ -215,14 +217,20 @@ export default function TestPage() {
     }, [testPhase, timeLeft]);
 
     useEffect(() => {
-        if (timeLeft <= 0 && testPhase === 'testing') handleFinishTest('TIME_WASTED', responseHistory);
+        if (timeLeft <= 0 && testPhase === 'testing') {
+            handleFinishTest('TIME_WASTED', responseHistory);
+        }
     }, [timeLeft, testPhase, responseHistory, handleFinishTest]);
 
-    // --- RENDER ---
-    if (status === 'loading' || !session) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
-    if (testPhase === 'enterCode') return <AccessCodeForm onStart={handleStartTest} loading={loading} error={error} setError={setError} />;
-    if (testPhase === 'finished') return <CompletionScreen userName={session.user.name} stoppingRule={stoppingRule} />;
-    console.log(stoppingRule);
+    if (status === 'loading' || !session) {
+        return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
+    }
+    if (testPhase === 'enterCode') {
+        return <AccessCodeForm onStart={handleStartTest} loading={loading} error={error} setError={setError} />;
+    }
+    if (testPhase === 'finished') {
+        return <CompletionScreen userName={session.user.name} stoppingRule={stoppingRule} />;
+    }
     if (testPhase === 'testing' && currentQuestion) {
         const formatTime = (seconds) => `${Math.floor(seconds / 60).toString().padStart(2, '0')}:${(seconds % 60).toString().padStart(2, '0')}`;
         return (
@@ -237,15 +245,37 @@ export default function TestPage() {
                         <Typography variant="h6" component="span">{formatTime(timeLeft)}</Typography>
                     </Paper>
                 </Box>
-                <QuestionDisplay tier1Text={currentQuestion.tier1Text} tier2Text={currentQuestion.tier2Text} showTier2={showTier2} />
-                <TierOptions label="Pilih Jawaban Tier 1:" options={currentQuestion.tier1Options} selectedValue={userAnswers.tier1} onChange={(e) => { setUserAnswers(prev => ({ ...prev, tier1: e.target.value })); setShowTier2(true); }} />
+                <QuestionDisplay
+                    tier1Text={currentQuestion.tier1Text}
+                    tier2Text={currentQuestion.tier2Text}
+                    image={currentQuestion.imagelink} // Sesuaikan dengan nama field di model
+                    showTier2={showTier2}
+                />
+                <TierOptions
+                    label="Pilih Jawaban Tier 1:"
+                    options={currentQuestion.tier1Options}
+                    selectedValue={userAnswers.tier1}
+                    onChange={(e) => { setUserAnswers(prev => ({ ...prev, tier1: e.target.value })); setShowTier2(true); }}
+                />
                 {showTier2 && (
                     <Box sx={{ mt: 3 }}>
-                        <TierOptions label="Pilih Alasan (Tier 2):" options={currentQuestion.tier2Options} selectedValue={userAnswers.tier2} onChange={(e) => setUserAnswers(prev => ({ ...prev, tier2: e.target.value }))} />
+                        <TierOptions
+                            label="Pilih Alasan (Tier 2):"
+                            options={currentQuestion.tier2Options}
+                            selectedValue={userAnswers.tier2}
+                            onChange={(e) => setUserAnswers(prev => ({ ...prev, tier2: e.target.value }))}
+                        />
                     </Box>
                 )}
                 <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-                    <Button variant="contained" endIcon={<ArrowForwardIcon />} onClick={processAnswerAndSelectNext} disabled={!userAnswers.tier1 || !userAnswers.tier2}>Lanjut</Button>
+                    <Button
+                        variant="contained"
+                        endIcon={<ArrowForwardIcon />}
+                        onClick={processAnswerAndSelectNext}
+                        disabled={!userAnswers.tier1 || !userAnswers.tier2}
+                    >
+                        Lanjut
+                    </Button>
                 </Box>
             </Container>
         );

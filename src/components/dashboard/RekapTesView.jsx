@@ -5,9 +5,11 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, IconButton, Alert } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { getTestRecapSummary, getTestRecapDetail } from '@/lib/api';
+import Link from 'next/link';
 
 // Komponen untuk Tampilan Detail
 const DetailView = ({ testData, onBack }) => {
+  console.log(testData.submissions);
   return (
     <>
       <Button startIcon={<ArrowBackIcon />} onClick={onBack} sx={{ mb: 2 }}>
@@ -22,9 +24,11 @@ const DetailView = ({ testData, onBack }) => {
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold' }}>Nama Siswa</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>NIS</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Sekolah</TableCell>
               <TableCell sx={{ fontWeight: 'bold' }}>Waktu Selesai</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold' }}>Nilai Akhir (Theta)</TableCell>
-              <TableCell align="right" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+              <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Nilai Akhir (Theta)</TableCell>
+              <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -33,10 +37,20 @@ const DetailView = ({ testData, onBack }) => {
                 <TableRow key={sub._id}>
                   <TableCell>{sub.userInfo.name}</TableCell>
                   <TableCell>{sub.userInfo.nis}</TableCell>
+                  <TableCell>{sub.userInfo.school}</TableCell>
                   <TableCell>{new Date(sub.testFinishTime).toLocaleString('id-ID')}</TableCell>
-                  <TableCell align="right">{sub.finalTheta.toFixed(3)}</TableCell>
-                  <TableCell align="right">
-                    <Button size="small" variant="outlined">Lihat Rincian</Button>
+                  <TableCell>{sub.stoppingRule}</TableCell>
+                  <TableCell align="center">{sub.finalTheta.toFixed(3)}</TableCell>
+                  <TableCell align="center">
+                    <Button
+                      component={Link}
+                      href={`/results/${sub._id}`}
+                      size="small"
+                      variant="outlined"
+                      target='_blank'
+                    >
+                      Lihat Rincian
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
@@ -104,7 +118,7 @@ export default function RekapTesView() {
   return (
     <Paper sx={{ p: 3 }}>
       {detailLoading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>}
-      
+
       {!detailLoading && selectedTest ? (
         // Tampilan 2: Detail Hasil Tes
         <DetailView testData={selectedTest} onBack={handleBackToSummary} />
@@ -117,18 +131,18 @@ export default function RekapTesView() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold' }}>Judul Tes</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Kode Akses</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Jumlah Peserta</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '200px' }}>Kode Akses</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '200px' }}>Jumlah Peserta</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '128px' }}>Aksi</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {summaries.map((test) => (
                   <TableRow key={test._id}>
                     <TableCell>{test.title}</TableCell>
-                    <TableCell><code>{test.accessCode}</code></TableCell>
-                    <TableCell align="center">{test.submissionCount}</TableCell>
-                    <TableCell align="right">
+                    <TableCell align='center' sx={{ verticalAlign: 'top' }}><code>{test.accessCode}</code></TableCell>
+                    <TableCell align="center" sx={{ verticalAlign: 'top' }}>{test.submissionCount}</TableCell>
+                    <TableCell align="center" sx={{ verticalAlign: 'top' }}>
                       <Button variant="contained" size="small" onClick={() => handleViewDetails(test._id)}>Lihat Rekap</Button>
                     </TableCell>
                   </TableRow>

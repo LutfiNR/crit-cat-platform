@@ -109,22 +109,22 @@ export default function BankTesView() {
               <TableHead>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 'bold' }}>Judul Tes</TableCell>
-                  <TableCell sx={{ fontWeight: 'bold' }}>Kode Akses</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Jumlah Soal</TableCell>
-                  <TableCell align="center" sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                  <TableCell align="right" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '256px' }}>Kode Akses</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '128px' }}>Jumlah Soal</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '96px' }}>Status</TableCell>
+                  <TableCell align="center" sx={{ fontWeight: 'bold', width: '128px'}}>Aksi</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {tests.map((test) => (
                   <TableRow key={test._id}>
-                    <TableCell>{test.title}</TableCell>
-                    <TableCell><code>{test.accessCode}</code></TableCell>
-                    <TableCell align="center">{test.questions.length}</TableCell>
-                    <TableCell align="center">
+                    <TableCell sx={{ verticalAlign: 'top'}}>{test.title}</TableCell>
+                    <TableCell align='center' sx={{ verticalAlign: 'top'}}><code>{test.accessCode}</code></TableCell>
+                    <TableCell align="center" sx={{ verticalAlign: 'top'}}>{test.questions.length}</TableCell>
+                    <TableCell align="center" sx={{ verticalAlign: 'top'}}>
                       <Chip label={test.status} color={test.status === 'published' ? 'success' : 'default'} size="small" />
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell align="center" sx={{ verticalAlign: 'top'}}>
                       <IconButton color="primary" onClick={() => handleOpenForm(test)}><EditIcon /></IconButton>
                       <IconButton color="error" onClick={() => handleDelete(test._id)}><DeleteIcon /></IconButton>
                     </TableCell>

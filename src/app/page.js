@@ -8,8 +8,10 @@ import PsychologyIcon from '@mui/icons-material/Psychology';
 import RuleIcon from '@mui/icons-material/Rule';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import { useSession } from 'next-auth/react';
 
 export default function HomePage() {
+    const { data: session, status } = useSession();
   return (
     <Container maxWidth="lg" sx={{ textAlign: 'center', py: { xs: 4, md: 8 } }}>
 
@@ -42,13 +44,13 @@ export default function HomePage() {
         <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Button
             component={Link}
-            href="/signup"
+            href= {(status === "authenticated" ? "/dashboard" : "/signup")}
             variant="contained"
             color="primary"
             size="large"
             sx={{ px: 4, py: 1.5 }}
           >
-            Buat Akun Baru
+            {status === "authenticated" ? "Masuk ke Dashboard" : "Daftar Sekarang"}
           </Button>
         </Box>
       </Box>

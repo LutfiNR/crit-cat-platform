@@ -128,7 +128,7 @@ export default function TestForm({ open, onClose, onSave, initialData }) {
                       disablePadding
                     >
                       <ListItemButton onClick={() => handleToggleQuestion(q._id)}>
-                        <ListItemText primary={q.tier1Text} secondary={`Subjek: ${q.subject} | Kesulitan: ${q.difficulty}`} />
+                        <ListItemText primary={q.tier1Text} secondary={`b: ${q.difficulty} | bi1: ${q.difficultySecondary} | bi2: ${q.difficultyTertiary} | bi3: ${q.difficultyQuaternary}`} />
                       </ListItemButton>
                     </ListItem>
                   );
