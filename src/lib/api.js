@@ -113,3 +113,17 @@ export const getTestRecapDetail = async (testId) => {
   const data = await response.json();
   return data.data;
 };
+
+export const deleteTest = async (testId) => {
+  const response = await fetch(`/api/tests/${testId}`, { method: 'DELETE' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message);
+  return data;
+};
+
+export const deleteSubmission = async (submissionId) => {
+  const response = await fetch(`/api/submissions/${submissionId}`, { method: 'DELETE' });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message);
+  return data;
+};

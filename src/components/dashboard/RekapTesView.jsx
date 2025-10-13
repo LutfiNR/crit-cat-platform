@@ -2,13 +2,15 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, IconButton, Alert } from '@mui/material';
+import { Box, Typography, Paper, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Button, IconButton, Alert, Snackbar } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { deleteTest, deleteSubmission } from '@/lib/api';
 import { getTestRecapSummary, getTestRecapDetail } from '@/lib/api';
 import Link from 'next/link';
 
 // Komponen untuk Tampilan Detail
-const DetailView = ({ testData, onBack }) => {
+const DetailView = ({ testData, onBack, onDeleteSubmission }) => {
   console.log(testData.submissions);
   return (
     <>
@@ -51,6 +53,18 @@ const DetailView = ({ testData, onBack }) => {
                     >
                       Lihat Rincian
                     </Button>
+                    <Button
+                      component={Link}
+                      href={`/results/${sub._id}`}
+                      size="small"
+                      variant="outlined"
+                      target='_blank'
+                    >
+                      Lihat Rincian
+                    </Button>
+                    <IconButton color="error" size="small" onClick={() => onDeleteSubmission(sub._id)}>
+                      <DeleteIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))
@@ -73,6 +87,7 @@ export default function RekapTesView() {
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [error, setError] = useState('');
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
   // Fetch data ringkasan saat komponen dimuat
   useEffect(() => {
@@ -108,6 +123,37 @@ export default function RekapTesView() {
     setSelectedTest(null);
   };
 
+  const handleDeleteTest = async (testId) => {
+    if (window.confirm('Yakin ingin menghapus tes ini beserta semua hasil pengerjaannya?')) {
+      try {
+        const result = await deleteTest(testId);
+        setNotification({ open: true, message: result.message, severity: 'success' });
+        setSummaries(prev => prev.filter(test => test._id !== testId));
+      } catch (err) {
+        setNotification({ open: true, message: err.message, severity: 'error' });
+      }
+    }
+  };
+
+  const handleDeleteSubmission = async (submissionId) => {
+    if (window.confirm('Yakin ingin menghapus hasil pengerjaan siswa ini?')) {
+      try {
+        const result = await deleteSubmission(submissionId);
+        setNotification({ open: true, message: result.message, severity: 'success' });
+        // Update state di detail view
+        setSelectedTest(prev => ({
+          ...prev,
+          submissions: prev.submissions.filter(sub => sub._id !== submissionId)
+        }));
+      } catch (err) {
+        setNotification({ open: true, message: err.message, severity: 'error' });
+      }
+    }
+  };
+
+  const handleCloseNotification = () => setNotification({ ...notification, open: false });
+
+
   if (loading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
   }
@@ -121,7 +167,7 @@ export default function RekapTesView() {
 
       {!detailLoading && selectedTest ? (
         // Tampilan 2: Detail Hasil Tes
-        <DetailView testData={selectedTest} onBack={handleBackToSummary} />
+        <DetailView testData={selectedTest} onBack={handleBackToSummary} onDeleteSubmission={handleDeleteSubmission} />
       ) : (
         // Tampilan 1: Ringkasan Semua Tes
         <>
@@ -144,6 +190,9 @@ export default function RekapTesView() {
                     <TableCell align="center" sx={{ verticalAlign: 'top' }}>{test.submissionCount}</TableCell>
                     <TableCell align="center" sx={{ verticalAlign: 'top' }}>
                       <Button variant="contained" size="small" onClick={() => handleViewDetails(test._id)}>Lihat Rekap</Button>
+                      <IconButton color="error" size="small" onClick={() => handleDeleteTest(test._id)}>
+                        <DeleteIcon />
+                      </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -152,6 +201,9 @@ export default function RekapTesView() {
           </TableContainer>
         </>
       )}
+      <Snackbar open={notification.open} autoHideDuration={6000} onClose={handleCloseNotification}>
+        <Alert onClose={handleCloseNotification} severity={notification.severity} sx={{ width: '100%' }}>{notification.message}</Alert>
+      </Snackbar>
     </Paper>
   );
 }

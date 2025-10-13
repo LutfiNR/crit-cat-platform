@@ -46,3 +46,32 @@ export async function GET(request, { params }) {
     return NextResponse.json({ success: false, message: "Gagal mengambil data hasil tes" }, { status: 500 });
   }
 }
+export async function DELETE(request, { params }) {
+  const session = await getServerSession(authOptions);
+  // Hanya guru yang boleh menghapus submission
+  if (session?.user?.role !== 'guru') {
+    return NextResponse.json({ message: "Akses ditolak" }, { status: 403 });
+  }
+
+  await dbConnect();
+  try {
+    const { submissionId } = params;
+    
+    // Keamanan: Pastikan guru adalah pemilik tes dari submission ini
+    const submission = await Submission.findById(submissionId).populate('testId', 'createdBy');
+    if (!submission) {
+      return NextResponse.json({ message: "Submission tidak ditemukan" }, { status: 404 });
+    }
+    if (submission.testId.createdBy.toString() !== session.user.id) {
+        return NextResponse.json({ message: "Anda tidak berhak menghapus submission ini" }, { status: 403 });
+    }
+
+    // Lakukan penghapusan
+    await Submission.findByIdAndDelete(submissionId);
+
+    return NextResponse.json({ success: true, message: "Hasil pengerjaan siswa berhasil dihapus." });
+  } catch (error) {
+    console.error("Delete Submission Error:", error);
+    return NextResponse.json({ success: false, message: "Gagal menghapus hasil pengerjaan." }, { status: 500 });
+  }
+}

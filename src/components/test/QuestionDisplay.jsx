@@ -5,8 +5,9 @@ import React from 'react';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import Box from '@mui/material/Box';
+import Image from 'next/image';
 
-const QuestionDisplay = ({currentQuestionIndex, image, tier1Text, tier2Text, showTier2 }) => {
+const QuestionDisplay = ({ image, tier1Text, tier2Text, showTier2 }) => {
   return (
     <Paper elevation={2} sx={{ p: 3, mb: 3 }}>
       <Box mb={showTier2 ? 2 : 0}>
@@ -15,7 +16,7 @@ const QuestionDisplay = ({currentQuestionIndex, image, tier1Text, tier2Text, sho
         </Typography>
         {image && (
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'center' }}>
-            <img src={image} alt={`Soal ${currentQuestionIndex}`} style={{ maxWidth: '100%', height: 'auto', borderRadius: 4 }} />
+            <Image src={image} alt='Gambar Soal' width={400} height={300} objectFit="contain" />
           </Box>
         )}
         <Typography variant="body1" component="p" sx={{ mb: 1, lineHeight: 1.7 }}>

@@ -11,7 +11,7 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import QuestionDisplay from '@/components/test/QuestionDisplay';
 import TierOptions from '@/components/test/TierOptions';
 import CompletionScreen from '@/components/test/CompletionScreen';
-import CAT_Engine from '@/lib/catHandlers';
+import CAT_Engine, { calculateNewTheta } from '@/lib/catHandlers';
 import { submitTestResults } from '@/lib/api';
 
 // --- KOMPONEN FORM KODE AKSES ---
@@ -73,10 +73,10 @@ export default function TestPage() {
     const [timeLeft, setTimeLeft] = useState(0);
     const [theta, setTheta] = useState(0);
     const [responseHistory, setResponseHistory] = useState([]);
+    const [informationItems, setInformationItems] = useState([]);
     const [answeredQuestionIds, setAnsweredQuestionIds] = useState(new Set());
     const [stoppingRule, setStoppingRule] = useState('');
     const [testStartTime, setTestStartTime] = useState(null);
-    const [totalInformation, setTotalInformation] = useState(0);
 
     const handleStartTest = async (code) => {
         setLoading(true);
@@ -119,7 +119,7 @@ export default function TestPage() {
             },
             testStartTime,
             testFinishTime: new Date(),
-            finalTheta: theta,
+            finalTheta: Math.max(...history.map(r => r.thetaAfter)),
             stoppingRule: rule,
             responseHistory: history,
         };
@@ -134,8 +134,8 @@ export default function TestPage() {
         const handleVisibilityChange = () => {
             if (document.hidden && testPhase === 'testing') {
                 const zeroedHistory = responseHistory.map(item => ({
-                    ...item, score: 0, pCorrect: 0, pWrong: 0, responsePattern: 0,
-                    informationFunction: 0, thetaBefore: 0, thetaAfter: 0, se: 0,
+                    ...item, score: 0, pCorrect: 0, pWrong: 0,
+                    informationItem: [], thetaBefore: 0, thetaAfter: 0, se: 0,
                     seDifference: item.seDifference === null ? null : 0,
                 }));
                 handleFinishTest('LEFT_TAB', zeroedHistory);
@@ -151,30 +151,37 @@ export default function TestPage() {
         const tier1Correct = userAnswers.tier1 === currentQuestion.correctTier1;
         const tier2Correct = userAnswers.tier2 === currentQuestion.correctTier2;
 
-        const score = CAT_Engine.calculateScore(tier1Correct, tier2Correct);
         const oldTheta = theta;
-        const responsePattern = CAT_Engine.calculateResponsePattern(score);
-        const pCorrect = CAT_Engine.calculateCorrectProbability(oldTheta, currentQuestion.difficulty);
-        const pWrong = CAT_Engine.calculcateWrongProbability(pCorrect);
+        const newTheta = calculateNewTheta(currentQuestion.difficulty);
+        const score = CAT_Engine.calculateScore(tier1Correct, tier2Correct);
+        const pCorrect = CAT_Engine.calculateCorrectProbability(score, newTheta, currentQuestion.difficultySecondary, currentQuestion.difficultyTertiary, currentQuestion.difficultyQuaternary);
+        const pWrong = CAT_Engine.calculcateWrongProbability(pCorrect.pCorrect);
+        const informationItem = CAT_Engine.calculateInformationItem(pCorrect.pCorrect, pWrong);
+        const newInformationItems = [...informationItems, informationItem];
+        setInformationItems(newInformationItems);
 
-        const thetaChange = (responsePattern - pCorrect) * 0.5; // Simplifikasi update theta
-        const newTheta = oldTheta + thetaChange;
-
-        const informationFunction = CAT_Engine.calculateInformationFunction(pCorrect, pWrong);
-        const newTotalInformation = totalInformation + informationFunction;
-        setTotalInformation(newTotalInformation);
-
-        const oldSE = responseHistory.length > 0 ? responseHistory[responseHistory.length - 1].se : 1.0;
-        const newSE = CAT_Engine.calculateStandardError(newTotalInformation);
-        const seDifference = responseHistory.length > 0 ? CAT_Engine.calculateDifferenceSE(oldSE, newSE) : null;
+        const oldSE = responseHistory.length > 0 ? responseHistory[responseHistory.length - 1].se : 0;
+        const newSE = CAT_Engine.calculateStandardError(newInformationItems);
+        const seDifference = CAT_Engine.calculateDifferenceSE(oldSE, newSE);
 
         const newHistoryEntry = {
             questionId: currentQuestion._id,
-            questionDifficulty: currentQuestion.difficulty,
+            questionDifficulty: {
+                difficulty: currentQuestion.difficulty,
+                difficultySecondary: currentQuestion.difficultySecondary,
+                difficultyTertiary: currentQuestion.difficultyTertiary,
+                difficultyQuaternary: currentQuestion.difficultyQuaternary,
+            },
             answerTier1: userAnswers.tier1,
             answerTier2: userAnswers.tier2,
-            score, pCorrect, pWrong, responsePattern, informationFunction,
-            thetaBefore: oldTheta, thetaAfter: newTheta, se: newSE, seDifference,
+            score,
+            pCorrect,
+            pWrong,
+            informationItem,
+            thetaBefore: oldTheta,
+            thetaAfter: newTheta,
+            se: newSE,
+            seDifference,
         };
         const updatedHistory = [...responseHistory, newHistoryEntry];
         setResponseHistory(updatedHistory);
@@ -203,7 +210,7 @@ export default function TestPage() {
         setAnsweredQuestionIds(prev => new Set(prev).add(nextQuestion._id));
         setUserAnswers({ tier1: null, tier2: null });
         setShowTier2(false);
-    }, [userAnswers, currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest, totalInformation]);
+    }, [userAnswers,  currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest]);
 
     useEffect(() => {
         if (status === 'unauthenticated') router.replace('/login');

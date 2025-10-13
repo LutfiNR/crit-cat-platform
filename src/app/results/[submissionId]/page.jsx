@@ -4,9 +4,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { 
-    Container, Typography, Box, CircularProgress, Paper, Grid, Chip, 
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow 
+import {
+    Container, Typography, Box, CircularProgress, Paper, Grid, Chip,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
@@ -17,7 +17,7 @@ const AnswerCell = ({ question, answerId, tier }) => {
 
     const options = tier === 1 ? question.tier1Options : question.tier2Options;
     const correctId = tier === 1 ? question.correctTier1 : question.correctTier2;
-    
+
     const chosenOption = options.find(opt => opt.id === answerId);
     const isCorrect = answerId === correctId;
 
@@ -49,7 +49,7 @@ export default function ResultDetailPage() {
                     if (!response.ok) throw new Error((await response.json()).message);
                     const data = await response.json();
                     setSubmission(data.submission);
-                } catch (err) { setError(err.message); } 
+                } catch (err) { setError(err.message); }
                 finally { setLoading(false); }
             };
             fetchSubmission();
@@ -58,8 +58,8 @@ export default function ResultDetailPage() {
     }, [submissionId, status, router]);
 
     if (loading || status === 'loading') return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
-    if (error) return <Container sx={{mt: 4}}><Paper sx={{p:3}}><Typography color="error">{error}</Typography></Paper></Container>;
-    if (!submission) return <Container sx={{mt: 4}}><Paper sx={{p:3}}><Typography>Data tidak ditemukan.</Typography></Paper></Container>;
+    if (error) return <Container sx={{ mt: 4 }}><Paper sx={{ p: 3 }}><Typography color="error">{error}</Typography></Paper></Container>;
+    if (!submission) return <Container sx={{ mt: 4 }}><Paper sx={{ p: 3 }}><Typography>Data tidak ditemukan.</Typography></Paper></Container>;
 
     const getScoreColor = (score) => {
         if (score === 4) return 'success';
@@ -98,36 +98,46 @@ export default function ResultDetailPage() {
             </Paper>
 
             <Typography variant="h5" component="h2" sx={{ mb: 2 }}>Rincian Jawaban per Soal</Typography>
-            
+
             <TableContainer component={Paper} variant="outlined">
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">
                     <TableHead>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>No.</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>Soal (Tier 1)</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>Jawaban (Tier 1)</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', minWidth: 200 }}>Jawaban (Tier 2)</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Skor</TableCell>
-                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Perubahan Theta</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Item</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>b</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>bi1</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>bi2</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>bi3</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>Skor</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>θ Awal</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>θ Akhir</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>P(θ)1</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>P(θ)2</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>P(θ)3</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>P(θ)4</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>P(θ)</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>SE</TableCell>
+                            <TableCell align="center" sx={{ fontWeight: 'bold', minWidth: 80 }}>SEΔ</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
                         {submission.responseHistory.map((item, index) => (
                             <TableRow key={index}>
-                                <TableCell>{index + 1}</TableCell>
-                                <TableCell>
-                                    <Typography variant="body2">{item.questionId?.tier1Text || "N/A"}</Typography>
-                                </TableCell>
-                                <AnswerCell question={item.questionId} answerId={item.answerTier1} tier={1} />
-                                <AnswerCell question={item.questionId} answerId={item.answerTier2} tier={2} />
-                                <TableCell align="center">
-                                    <Chip label={item.score} color={getScoreColor(item.score)} size="small" />
-                                </TableCell>
-                                <TableCell align="center">
-                                    <Typography variant="body2">
-                                        {item.thetaBefore.toFixed(3)} → {item.thetaAfter.toFixed(3)}
-                                    </Typography>
-                                </TableCell>
+                                <TableCell align="center" >{index + 1}</TableCell>
+                                <TableCell align="center" >{item.questionDifficulty.difficulty}</TableCell>
+                                <TableCell align="center" >{item.questionDifficulty.difficultySecondary}</TableCell>
+                                <TableCell align="center" >{item.questionDifficulty.difficultyTertiary}</TableCell>
+                                <TableCell align="center" >{item.questionDifficulty.difficultyQuaternary}</TableCell>
+                                <TableCell align="center" >{item.score}</TableCell>
+                                <TableCell align="center" >{item.thetaBefore}</TableCell>
+                                <TableCell align="center" >{item.thetaAfter}</TableCell>
+                                <TableCell align="center" >{Math.round(item.pCorrect.pCorrect0 * 1000) / 1000}</TableCell>
+                                <TableCell align="center" >{Math.round(item.pCorrect.pCorrect1 * 1000) / 1000}</TableCell>
+                                <TableCell align="center" >{Math.round(item.pCorrect.pCorrect2 * 1000) / 1000}</TableCell>
+                                <TableCell align="center" >{Math.round(item.pCorrect.pCorrect3 * 1000) / 1000}</TableCell>
+                                <TableCell align="center" >{Math.round(item.pCorrect.pCorrect * 1000) / 1000}</TableCell>
+                                <TableCell align="center" >{Math.round(item.se * 1000) / 1000}</TableCell>
+                                <TableCell align="center" >{Math.round(item.seDifference * 1000) / 1000}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

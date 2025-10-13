@@ -17,28 +17,6 @@ import BankTesView from '@/components/dashboard/BankTesView';
 import RekapTesView from '@/components/dashboard/RekapTesView';
 import Link from 'next/link';
 
-// ===================================================================
-// ## KOMPONEN REUSABLE UNTUK KARTU STATISTIK GURU ##
-// ===================================================================
-const StatCard = ({ icon, title, value }) => (
-  <Grid item xs={12} sm={4}>
-    <Paper
-      elevation={3}
-      sx={{
-        p: 3,
-        textAlign: 'center',
-        transition: 'transform 0.2s ease-in-out',
-        '&:hover': {
-          transform: 'scale(1.05)'
-        }
-      }}>
-      {icon}
-      <Typography variant="h6">{title}</Typography>
-      <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{value}</Typography>
-    </Paper>
-  </Grid>
-);
-
 
 // ===================================================================
 // ## KOMPONEN DASHBOARD SISWA ##

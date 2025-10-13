@@ -2,14 +2,24 @@ import mongoose from 'mongoose';
 
 const ResponseHistorySchema = new mongoose.Schema({
   questionId: { type: String, required: true },
-  questionDifficulty: { type: Number, required: true },
+  questionDifficulty:{
+    difficulty: { type: Number, required: true },
+    difficultySecondary: { type: Number, required: true },
+    difficultyTertiary: { type: Number, required: true },
+    difficultyQuaternary: { type: Number, required: true },
+  },
   answerTier1: { type: String, required: true },
   answerTier2: { type: String, required: true },
   score: { type: Number, required: true },
-  pCorrect: { type: Number, required: true },
+  pCorrect: {
+    pCorrect: { type: Number, required: true },
+    pCorrect0: { type: Number, required: true },
+    pCorrect1: { type: Number, required: true },
+    pCorrect2: { type: Number, required: true },
+    pCorrect3: { type: Number, required: true },
+  },
   pWrong: { type: Number, required: true },
-  responsePattern: { type: Number, required: true },
-  informationFunction: { type: Number, required: true },
+  informationItem: { type: Number, required: true },
   thetaBefore: { type: Number, required: true },
   thetaAfter: { type: Number, required: true },
   se: { type: Number, required: true },

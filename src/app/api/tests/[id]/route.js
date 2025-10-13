@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
 import Test from '@/models/Test';
+import Submission from '@/models/Submission';
 
 // --- GET: Mengambil detail satu tes ---
 export async function GET(request, { params }) {
@@ -57,27 +58,31 @@ export async function PUT(request, { params }) {
   }
 }
 
-// --- DELETE: Menghapus satu tes ---
 export async function DELETE(request, { params }) {
   const { id } = await params;
   const session = await getServerSession(authOptions);
   if (session?.user?.role !== 'guru') {
     return NextResponse.json({ message: "Akses ditolak" }, { status: 403 });
   }
-
+  
   await dbConnect();
   try {
     const test = await Test.findById(id);
     if (!test) {
-      return NextResponse.json({ message: "Tes tidak ditemukan" }, { status: 404 });
+        return NextResponse.json({ message: "Tes tidak ditemukan" }, { status: 404 });
     }
     if (test.createdBy.toString() !== session.user.id) {
-      return NextResponse.json({ message: "Anda tidak memiliki akses untuk menghapus tes ini" }, { status: 403 });
+        return NextResponse.json({ message: "Anda tidak memiliki akses untuk menghapus tes ini" }, { status: 403 });
     }
 
+    // --- LOGIKA BARU: Hapus semua submission terkait ---
+    await Submission.deleteMany({ testId: id });
+    // ---------------------------------------------
+    
+    // Hapus tes itu sendiri
     await Test.findByIdAndDelete(id);
-
-    return NextResponse.json({ success: true, message: "Tes berhasil dihapus" });
+    
+    return NextResponse.json({ success: true, message: "Tes dan semua hasil pengerjaannya berhasil dihapus" });
   } catch (error) {
     return NextResponse.json({ success: false, message: "Gagal menghapus tes" }, { status: 500 });
   }
