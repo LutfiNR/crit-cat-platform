@@ -3,8 +3,11 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]/route';
+import mongoose from 'mongoose';
 import dbConnect from '@/lib/dbConnect';
+import Question from '@/models/Question';
 import Test from '@/models/Test';
+import Submission from '@/models/Submission';
 
 // --- GET: Mengambil daftar tes milik guru yang login ---
 export async function GET() {

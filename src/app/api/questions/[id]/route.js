@@ -5,6 +5,8 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route'; // Path relatif
 import dbConnect from '@/lib/dbConnect';
 import Question from '@/models/Question';
+import Test from '@/models/Test';
+import Submission from '@/models/Submission';
 
 // --- GET: Mengambil satu soal berdasarkan ID ---
 export async function GET(request, { params }) {

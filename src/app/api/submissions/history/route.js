@@ -4,6 +4,8 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
+import Question from '@/models/Question';
+import Test from '@/models/Test';
 import Submission from '@/models/Submission';
 
 export async function GET() {

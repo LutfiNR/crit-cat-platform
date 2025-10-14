@@ -4,9 +4,9 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../auth/[...nextauth]/route';
 import dbConnect from '@/lib/dbConnect';
-import Submission from '@/models/Submission';
-import Test from '@/models/Test'; // Diperlukan untuk cek kepemilikan
 import Question from '@/models/Question'; // Penting agar populate berfungsi
+import Test from '@/models/Test'; // Diperlukan untuk cek kepemilikan
+import Submission from '@/models/Submission';
 
 export async function GET(request, { params }) {
   const session = await getServerSession(authOptions);

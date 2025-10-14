@@ -202,15 +202,32 @@ export default function TestPage() {
             return;
         }
 
-        const nextQuestion = availableQuestions.reduce((prev, curr) =>
-            Math.abs(curr.difficulty - newTheta) < Math.abs(prev.difficulty - newTheta) ? curr : prev
-        );
+        const nextQuestion = (() => {
+            let filtered;
+
+            // Step 1: Filter based on score
+            if (score < 3) {
+                // Prefer easier questions (difficulty < 0)
+                filtered = availableQuestions.filter(q => q.difficulty < 0);
+            } else {
+                // Prefer harder questions (difficulty > 0)
+                filtered = availableQuestions.filter(q => q.difficulty > 0);
+            }
+
+            // Step 2: Fallback if none match the filter
+            if (filtered.length === 0) filtered = availableQuestions;
+
+            // Step 3: Find the question whose difficulty is closest to 0
+            return filtered.reduce((prev, curr) =>
+                Math.abs(curr.difficulty - 0) < Math.abs(prev.difficulty - 0) ? curr : prev
+            );
+        })();
 
         setCurrentQuestion(nextQuestion);
         setAnsweredQuestionIds(prev => new Set(prev).add(nextQuestion._id));
         setUserAnswers({ tier1: null, tier2: null });
         setShowTier2(false);
-    }, [userAnswers,  currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest]);
+    }, [userAnswers, currentQuestion, theta, responseHistory, testData, answeredQuestionIds, handleFinishTest]);
 
     useEffect(() => {
         if (status === 'unauthenticated') router.replace('/login');
