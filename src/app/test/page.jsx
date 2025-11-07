@@ -191,7 +191,7 @@ export default function TestPage() {
             handleFinishTest('NO_MORE_QUESTIONS', updatedHistory);
             return;
         }
-        if (seDifference !== null && seDifference < 0.001) {
+        if (seDifference !== null && seDifference < 0.01) {
             handleFinishTest('SE_DIFFERENCE', updatedHistory);
             return;
         }
