@@ -15,6 +15,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import BankSoalView from '@/components/dashboard/BankSoalView';
 import BankTesView from '@/components/dashboard/BankTesView';
 import RekapTesView from '@/components/dashboard/RekapTesView';
+import calculateDurationOfTest from '@/lib/calculateDurationOfTest';
 import Link from 'next/link';
 
 
@@ -72,7 +73,7 @@ const SiswaDashboard = ({ session }) => {
             <TableHead>
               <TableRow>
                 <TableCell sx={{ fontWeight: 'bold' }}>Nama Test</TableCell>
-                <TableCell sx={{ fontWeight: 'bold' }}>Waktu Selesai</TableCell>
+                <TableCell sx={{ fontWeight: 'bold' }}>Waktu Pengerjaan</TableCell>
                 <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Nilai Akhir (Theta)</TableCell>
                 <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
@@ -83,7 +84,7 @@ const SiswaDashboard = ({ session }) => {
                 history.map((item) => (
                   <TableRow key={item._id}>
                     <TableCell>{item.testId.title}</TableCell>
-                    <TableCell>{new Date(item.testFinishTime).toLocaleString('id-ID')}</TableCell>
+                    <TableCell>{calculateDurationOfTest(item.testStartTime,item.testFinishTime).minutes} Menit {calculateDurationOfTest(item.testStartTime,item.testFinishTime).seconds} Detik</TableCell>
                     <TableCell>{item.stoppingRule}</TableCell>
                     <TableCell align="center">{item.finalTheta.toFixed(3)}</TableCell>
                     <TableCell align="center">

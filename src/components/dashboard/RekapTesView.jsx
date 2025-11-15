@@ -8,6 +8,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { deleteTest, deleteSubmission } from '@/lib/api';
 import { getTestRecapSummary, getTestRecapDetail } from '@/lib/api';
 import Link from 'next/link';
+import calculateDurationOfTest from '@/lib/calculateDurationOfTest';
 
 // Komponen untuk Tampilan Detail
 const DetailView = ({ testData, onBack, onDeleteSubmission }) => {
@@ -40,19 +41,10 @@ const DetailView = ({ testData, onBack, onDeleteSubmission }) => {
                   <TableCell>{sub.userInfo.name}</TableCell>
                   <TableCell>{sub.userInfo.nis}</TableCell>
                   <TableCell>{sub.userInfo.school}</TableCell>
-                  <TableCell>{new Date(sub.testFinishTime).toLocaleString('id-ID')}</TableCell>
+                  <TableCell>{calculateDurationOfTest(sub.testStartTime, sub.testFinishTime).minutes} Menit {calculateDurationOfTest(sub.testStartTime, sub.testFinishTime).seconds} Detik</TableCell>
                   <TableCell>{sub.stoppingRule}</TableCell>
                   <TableCell align="center">{sub.finalTheta.toFixed(3)}</TableCell>
                   <TableCell align="center">
-                    <Button
-                      component={Link}
-                      href={`/results/${sub._id}`}
-                      size="small"
-                      variant="outlined"
-                      target='_blank'
-                    >
-                      Lihat Rincian
-                    </Button>
                     <Button
                       component={Link}
                       href={`/results/${sub._id}`}
